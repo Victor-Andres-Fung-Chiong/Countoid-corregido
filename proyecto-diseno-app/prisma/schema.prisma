@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "sqlserver"
+}
+
+model categorias {
+  id_categoria  Int             @id(map: "PK__categori__CD54BC5A76A5AA28") @default(autoincrement())
+  nombre        String          @db.NVarChar(100)
+  tipo          String          @db.NVarChar(20)
+  id_usuario    Int
+  usuarios      usuarios        @relation(fields: [id_usuario], references: [id_usuario], onUpdate: NoAction, map: "FK_categorias_usuarios")
+  transacciones transacciones[]
+}
+
+model cuentas {
+  id_cuenta     Int             @id(map: "PK__cuentas__C7E28685872FF7A1") @default(autoincrement())
+  id_usuario    Int
+  nombre        String          @db.NVarChar(100)
+  tipo_moneda   String          @db.NVarChar(10)
+  saldo_actual  Decimal         @db.Decimal(12, 2)
+  usuarios      usuarios        @relation(fields: [id_usuario], references: [id_usuario], onUpdate: NoAction, map: "FK_cuentas_usuarios")
+  transacciones transacciones[]
+}
+
+model division_gasto {
+  id_gasto         Int
+  id_usuario       Int
+  monto            Decimal          @db.Decimal(12, 2)
+  pagado           Boolean          @default(false, map: "DF__division___pagad__0B91BA14")
+  gasto_compartido gasto_compartido @relation(fields: [id_gasto], references: [id_gasto], onUpdate: NoAction, map: "FK_divisionGasto_gastoCompartido")
+  usuarios         usuarios         @relation(fields: [id_usuario], references: [id_usuario], onUpdate: NoAction, map: "FK_divisionGasto_usuarios")
+
+  @@id([id_gasto, id_usuario], map: "PK__division__285B1BCA1A393C0C")
+}
+
+model gasto_compartido {
+  id_gasto       Int              @id(map: "PK__gasto_co__ECB8FB80E4F0B6A1") @default(autoincrement())
+  id_transaccion Int
+  id_grupo       Int
+  division_gasto division_gasto[]
+  grupos         grupos           @relation(fields: [id_grupo], references: [id_group], onUpdate: NoAction, map: "FK_gastoCompartido_grupos")
+  transacciones  transacciones    @relation(fields: [id_transaccion], references: [id_transaccion], onUpdate: NoAction, map: "FK_gastoCompartido_transacciones")
+}
+
+model grupo_usuarios {
+  id_grupo   Int
+  id_usuario Int
+  rol        String   @db.NVarChar(20)
+  grupos     grupos   @relation(fields: [id_grupo], references: [id_group], onUpdate: NoAction, map: "FK_grupoUsuarios_grupos")
+  usuarios   usuarios @relation(fields: [id_usuario], references: [id_usuario], onUpdate: NoAction, map: "FK_grupoUsuarios_usuarios")
+
+  @@id([id_grupo, id_usuario], map: "PK__grupo_us__4F8B36C2046D6601")
+}
+
+model grupos {
+  id_group         Int                @id(map: "PK__grupos__8BE8BA1BF3A63A4F") @default(autoincrement())
+  nombre           String             @db.NVarChar(100)
+  descripcion      String?            @db.NVarChar(255)
+  id_creador       Int
+  fecha_creacion   DateTime           @default(now(), map: "DF__grupos__fecha_cr__797309D9") @db.DateTime
+  gasto_compartido gasto_compartido[]
+  grupo_usuarios   grupo_usuarios[]
+  usuarios         usuarios           @relation(fields: [id_creador], references: [id_usuario], onUpdate: NoAction, map: "FK_grupos_usuarios")
+}
+
+model transacciones {
+  id_transaccion   Int                @id(map: "PK__transacc__1EDAC09972D91B4B") @default(autoincrement())
+  id_usuario       Int
+  id_cuenta        Int
+  id_categoria     Int
+  tipo             String             @db.NVarChar(20)
+  metodo           String             @db.NVarChar(50)
+  monto            Decimal            @db.Decimal(12, 2)
+  descripcion      String?            @db.NVarChar(255)
+  fecha            DateTime           @db.DateTime
+  es_compartido    Boolean            @default(false, map: "DF__transacci__es_co__01142BA1")
+  fecha_creacion   DateTime           @default(now(), map: "DF__transacci__fecha__02084FDA") @db.DateTime
+  gasto_compartido gasto_compartido[]
+  categorias       categorias         @relation(fields: [id_categoria], references: [id_categoria], onUpdate: NoAction, map: "FK_transacciones_categorias")
+  cuentas          cuentas            @relation(fields: [id_cuenta], references: [id_cuenta], onUpdate: NoAction, map: "FK_transacciones_cuentas")
+  usuarios         usuarios           @relation(fields: [id_usuario], references: [id_usuario], onUpdate: NoAction, map: "FK_transacciones_usuarios")
+}
+
+model objetivos {
+  id_objetivo    Int       @id @default(autoincrement())
+  id_usuario     Int
+  nombre         String    @db.NVarChar(100)
+  icono          String    @db.NVarChar(50)
+  monto          Decimal   @db.Decimal(12, 2)
+  fecha_limite   DateTime? @db.DateTime
+  fecha_creacion DateTime  @default(now()) @db.DateTime
+  usuarios       usuarios  @relation(fields: [id_usuario], references: [id_usuario], onUpdate: NoAction, map: "FK_objetivos_usuarios")
+}
+
+model usuarios {
+  id_usuario     Int              @id(map: "PK__usuarios__4E3E04ADFAB4A991") @default(autoincrement())
+  nombre         String           @db.NVarChar(100)
+  apellido       String           @db.NVarChar(100)
+  email          String           @unique(map: "UQ__usuarios__AB6E6164B32C087C") @db.NVarChar(150)
+  telefono       String           @db.NVarChar(20)
+  pais           String           @db.NVarChar(100)
+  provincia      String           @db.NVarChar(100)
+  contrasena     String           @db.NVarChar(255)
+  fecha_creacion DateTime         @default(now(), map: "DF__usuarios__fecha___70DDC3D8") @db.DateTime
+  categorias     categorias[]
+  cuentas        cuentas[]
+  division_gasto division_gasto[]
+  grupo_usuarios grupo_usuarios[]
+  grupos         grupos[]
+  objetivos      objetivos[]
+  transacciones  transacciones[]
+}
